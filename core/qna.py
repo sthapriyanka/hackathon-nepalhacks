@@ -6,33 +6,36 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
     """Generate QA pairs from text segment using LLaMA model."""
    
     qa_pairs = []
-   
+
+    example_question = [
+    "Is access to applications, operating systems, databases, and network devices provisioned according to the principle of least privilege?",
+    "Has management approved an access control policy, communicated it to constituents, appointed an owner to maintain it, and reviewed it?",
+    "Are remote users prevented from copying data to remote non-corporate devices when using remote terminal services?",
+    "Do contractual agreements specify whether third-parties are permitted to resell, assign, or permit access to customer data, or the outsourcer's data, metadata, and systems, to other entities?",
+    "Are inactive constituent user IDs disabled and deleted after defined periods of inactivity?"
+    ]
+
+    formatted_examples = '\n'.join(f"- {q}" for q in example_question)
     # This would be the actual LLaMA implementation
-    prompt = f"""
-    You are an expert at analyzing security and compliance documents and extracting question-answer pairs.
-    Given the following text from a document, create {max_pairs} clear question-answer pairs related to security policies, 
-    compliance requirements, and standards. Focus on extracting factual information that would be useful for security assessments.
-    
+    prompt =f"""
+    You are an expert at analyzing security and compliance documents. Given the following text, generate up to {max_pairs} pairs of relevant question-answer focusing on security and compliance controls, practices, and requirements.
+
     TEXT:
     {text_segment}
-    
-    For each pair, provide:
-    1. A clear, direct question about a security policy, requirement, or practice
-    2. A concise but complete answer based only on the text
-    3. A confidence score between 0 and 1
-    4. Any flags for ambiguity or incompleteness
-    
-    Format your response as JSON:
+
+    EXAMPLES:
+    {formatted_examples}
+
+    Format your answer like this:
     [
         {{
-            "question": "Question text here?",
-            "answer": "Answer text here.",
-            "confidence": 0.85,
-            "flags": ["flag 1", "flag 2"]
+            "question": "Your question here?",
+            "answer": "Answer from the text."
         }},
         ...
     ]
-    """
+      """
+
     
     # In a real implementation, this is where you would call the LLaMA model
     
@@ -56,8 +59,6 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
                 qa_pairs.append({
                     "question": questions[i],
                     "answer": answers[i],
-                    "confidence": float(confidences[i]),
-                    "flags": []
                 })
     
     return qa_pairs
@@ -74,7 +75,6 @@ def generate_from_qwen(prompt):
         device_map="auto"
     )
     print(f"Model {model_name} loaded successfully!")
-
     messages = [
         {"role": "user", "content": prompt}
     ]
@@ -82,27 +82,27 @@ def generate_from_qwen(prompt):
     text = tokenizer.apply_chat_template(
         messages,
         tokenize=False,
-        add_generation_prompt=True,
-        enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+        add_generation_prompt=True
     )
-    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+    model_inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
     print("Generating text...")
     generated_ids = model.generate(
-    **model_inputs,
-    max_new_tokens=32768
+        **model_inputs,
+        max_new_tokens=150,
+        temperature=0.7,
+        top_p=0.9,
+        do_sample=True,
+        pad_token_id=tokenizer.eos_token_id
     )
-    output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
 
-    # parsing thinking content
-    try:
-        # rindex finding 151668 (</think>)
-        index = len(output_ids) - output_ids[::-1].index(151668)
-    except ValueError:
-        index = 0
+    output_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+    print("Output:\n", output_text)
 
-    thinking_content = tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
-    content = tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
-    print(thinking_content)
-    return content
+    # Optional: extract only the assistant's answer (after user prompt)
+    if "Assistant:" in output_text:
+        output_text = output_text.split("Assistant:")[-1].strip()
+
+    return output_text
 
