@@ -1,6 +1,8 @@
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 import re
 import json
+from core.model import get_model_and_tokenizer
+import pandas as pd
+import numpy as np
 
 def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
     """Generate QA pairs from text segment using LLaMA model."""
@@ -8,27 +10,42 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
     qa_pairs = []
    
     # This would be the actual LLaMA implementation
+    example_questions = [
+        "Is access to applications, operating systems, databases, and network devices provisioned according to the principle of least privilege?",
+        "Has management approved an access control policy, communicated it to constituents, appointed an owner to maintain it, and reviewed it?",
+        "Are remote users prevented from copying data to remote non-corporate devices when using remote terminal services?",
+        "Do contractual agreements specify whether third parties are permitted to resell, assign, or permit access to customer data, or the outsourcer's data, metadata, and systems, to other entities?",
+        "Are inactive constituent user IDs disabled and deleted after defined periods of inactivity?"
+    ]
+
+    formatted_examples = '\n'.join(f"- {q}" for q in example_questions)
+
     prompt = f"""
-    You are an expert at analyzing security and compliance documents and extracting question-answer pairs.
-    Given the following text from a document, create {max_pairs} clear question-answer pairs related to security policies, 
-    compliance requirements, and standards. Focus on extracting factual information that would be useful for security assessments.
-    
+    You are a compliance and security analyst with expertise in Governance, Risk, and Compliance (GRC) standards. Your task is to read a segment of a policy or regulatory document and generate up to {max_pairs} high-quality question-answer pairs based solely on the text.
+
+    Each question should:
+    - Relate to GRC controls, practices, or policies (e.g., access control, data protection, vendor management, incident response)
+    - Be concise, unambiguous, and directly answerable from the provided text
+    - Be suitable for use in a security audit or compliance checklist
+
+    Each answer should:
+    - Be factual and based only on the given text
+    - Be clear and complete enough for an assessor or compliance tool
+
+    Additionally, for each pair, include a field indicating which GRC domain or policy area it relates to (e.g., "Access Control", "Data Governance", "Incident Response").
+
     TEXT:
     {text_segment}
-    
-    For each pair, provide:
-    1. A clear, direct question about a security policy, requirement, or practice
-    2. A concise but complete answer based only on the text
-    3. A confidence score between 0 and 1
-    4. Any flags for ambiguity or incompleteness
-    
-    Format your response as JSON:
+
+    EXAMPLES of good questions, Use questions similar to the following (don't copy, just mirror the intent:
+    {formatted_examples}
+
+    Format your response as a JSON list:
     [
         {{
-            "question": "Question text here?",
-            "answer": "Answer text here.",
-            "confidence": 0.85,
-            "flags": ["flag 1", "flag 2"]
+            "question": "Your question here?",
+            "answer": "Answer based only on the above text.",
+            "grc_domain": "Relevant GRC domain (e.g., Access Control)"
         }},
         ...
     ]
@@ -39,6 +56,8 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
     # response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
     response = generate_from_qwen(prompt)
+    
+    print(response)
 
     # Extract JSON from response
     json_match = re.search(r'\[\s*{\s*"question"', response)
@@ -56,7 +75,7 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
                 qa_pairs.append({
                     "question": questions[i],
                     "answer": answers[i],
-                    "confidence": float(confidences[i]),
+                    "confidence": 1,
                     "flags": []
                 })
     
@@ -66,14 +85,7 @@ def generate_qa_pairs(text_segment, temperature, top_p, max_pairs=5):
 def generate_from_qwen(prompt):
     model_name = "Qwen/Qwen3-0.6B"
 
-    print(f"Loading model {model_name}...")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype="auto",
-        device_map="auto"
-    )
-    print(f"Model {model_name} loaded successfully!")
+    tokenizer, model = get_model_and_tokenizer(model_name)
 
     messages = [
         {"role": "user", "content": prompt}

@@ -338,12 +338,13 @@ def process_document():
                 
                 # Display QA pairs
                 for i, row in display_df.iterrows():
+                    print(row)
                     with st.container():
                         st.markdown(f"""
                         <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; border: 1px solid #E5E7EB;">
                             <p class="qa-question">Q: {row['question']}</p>
                             <p class="qa-answer">A: {row['answer']}</p>
-                            <p class="qa-confidence">Confidence: {row['confidence']:.2f}</p>
+                            <p class="qa-confidence">Confidence: {row['confidence_score']:.2f}</p>
                             {f'<p class="qa-flag">Flags: {", ".join(row["flags"])}</p>' if row["flags"] else ''}
                         </div>
                         """, unsafe_allow_html=True)

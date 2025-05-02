@@ -36,7 +36,7 @@ def display_qa_pairs(qa_pairs, filter_option="All", sort_option="Confidence (Hig
     # Apply filtering
     display_df = df.copy()
     if filter_option == "High Confidence (>0.8)":
-        display_df = display_df[display_df["confidence"] > 0.8]
+        display_df = display_df[display_df["confidence_score"] > 0.8]
     elif filter_option == "Flagged Items":
         display_df = display_df[display_df["flags"].apply(lambda x: len(x) > 0)]
     elif filter_option == "No Flags":
@@ -44,9 +44,9 @@ def display_qa_pairs(qa_pairs, filter_option="All", sort_option="Confidence (Hig
     
     # Apply sorting
     if sort_option == "Confidence (High to Low)":
-        display_df = display_df.sort_values("confidence", ascending=False)
+        display_df = display_df.sort_values("confidence_score", ascending=False)
     else:
-        display_df = display_df.sort_values("confidence", ascending=True)
+        display_df = display_df.sort_values("confidence_score", ascending=True)
     
     # Display QA pairs
     for i, row in display_df.iterrows():
@@ -55,7 +55,9 @@ def display_qa_pairs(qa_pairs, filter_option="All", sort_option="Confidence (Hig
             <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; border: 1px solid #E5E7EB;">
                 <p class="qa-question">Q: {row['question']}</p>
                 <p class="qa-answer">A: {row['answer']}</p>
-                <p class="qa-confidence">Confidence: {row['confidence']:.2f}</p>
+                <p class="qa-category">Category: {row['category']}</p>
+                <p class="qa-confidence">Confidence Score: {row['confidence_score']:.2f}</p>
+                <p class="qa-confidence">Relevance Score: {row['relevance_score']:.2f}</p>
                 {f'<p class="qa-flag">Flags: {", ".join(row["flags"])}</p>' if row["flags"] else ''}
             </div>
             """, unsafe_allow_html=True)

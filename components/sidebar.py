@@ -14,19 +14,21 @@ def configure_sidebar():
     
     # QA Generation settings
     st.sidebar.markdown('<h3>QA Generation Settings</h3>', unsafe_allow_html=True)
-    min_confidence = st.sidebar.slider("Minimum Confidence Score", 0.0, 1.0, 0.7)
+    # min_confidence = st.sidebar.slider("Minimum Confidence Score", 0.0, 1.0, 0.7)
+    min_confidence=0.7
     max_qa_pairs = st.sidebar.slider("Maximum QA Pairs", 5, 50, 20)
-    advanced_mode = st.sidebar.checkbox("Advanced Mode", False)
+    temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.2)
+    advanced_mode=False
+    # advanced_mode = st.sidebar.checkbox("Advanced Mode", False)
     
     # Advanced settings
-    if advanced_mode:
-        temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.2)
-        top_p = st.sidebar.slider("Top P", 0.0, 1.0, 0.95)
-        ocr_resolution = st.sidebar.slider("OCR Resolution (DPI)", 150, 600, 300)
-    else:
-        temperature = 0.2
-        top_p = 0.95
-        ocr_resolution = 300
+    # if advanced_mode:
+    #     top_p = st.sidebar.slider("Top P", 0.0, 1.0, 0.95)
+    #     ocr_resolution = st.sidebar.slider("OCR Resolution (DPI)", 150, 600, 300)
+    # else:
+    # temperature = 0.2
+    top_p = 0.95
+    ocr_resolution = 300
     
     # Return all settings as a dictionary
     return {

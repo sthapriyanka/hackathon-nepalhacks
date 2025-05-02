@@ -45,6 +45,10 @@ st.markdown("""
         color: #1F2937;
     }
     .qa-confidence {
+        font-size: 0.9rem;
+        color: #6B7280;
+    }
+    .qa-confidence {
         font-size: 0.8rem;
         color: #6B7280;
     }

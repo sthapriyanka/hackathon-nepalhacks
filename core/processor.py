@@ -6,6 +6,7 @@ from utils.ui_utils import display_qa_pairs, show_download_options
 from components.display import show_file_details
 from core.parser import extract_text, clean_text, segment_text
 from core.qna import generate_qa_pairs
+from core.evaluate_qna import evaluate_qa_pairs
 
 class DocumentProcessor:
     """Main document processing pipeline class."""
@@ -26,7 +27,8 @@ class DocumentProcessor:
         st.markdown('<h2 class="sub-header">Upload Document</h2>', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
             "Upload a PDF, DOCX, or image file",
-            type=["pdf", "docx", "doc", "jpg", "jpeg", "png", "txt"]
+            type=["pdf", "docx", "doc", "jpg", "jpeg", "png", "txt"],
+            accept_multiple_files=False
         )
         
         if uploaded_file is None:
@@ -55,9 +57,11 @@ class DocumentProcessor:
                 # Process segments to generate QA pairs
                 all_qa_pairs = self._generate_qa_pairs(text_segments)
                 
-                # Filter by confidence score
-                filtered_qa_pairs = [qa for qa in all_qa_pairs if qa["confidence"] >= self.settings["min_confidence"]]
+                all_qa_pairs = evaluate_qa_pairs(all_qa_pairs)
                 
+                # Filter by confidence score
+                filtered_qa_pairs = [qa for qa in all_qa_pairs if qa["confidence_score"] >= self.settings["min_confidence"]]
+
                 # Limit to max_qa_pairs
                 filtered_qa_pairs = filtered_qa_pairs[:self.settings["max_qa_pairs"]]
                 
@@ -110,4 +114,5 @@ class DocumentProcessor:
                 # Update progress
                 progress_bar.progress((i + 1) / len(text_segments))
         
+        print(all_qa_pairs)
         return all_qa_pairs
